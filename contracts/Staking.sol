@@ -104,7 +104,7 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
     function stake(
         uint256 amount
     ) external nonReentrant whenNotPaused updateReward(msg.sender) {
-        if (amount <= 0) revert AmountMustBeGreaterThanZero();
+        if (amount == 0) revert AmountMustBeGreaterThanZero();
         totalStakedTokens += amount;
         stakedBalance[msg.sender] += amount;
         emit Staked(msg.sender, amount);
@@ -123,7 +123,7 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
     function withdrawStakedTokens(
         uint256 amount
     ) external nonReentrant whenNotPaused updateReward(msg.sender) {
-        if (amount <= 0) revert AmountMustBeGreaterThanZero();
+        if (amount == 0) revert AmountMustBeGreaterThanZero();
         if (stakedBalance[msg.sender] < amount) revert AmountNotEnough();
         if (borrowedAmount[msg.sender] > 0) revert LoanNotRepaid(); // Prevent withdrawal if there's an outstanding loan
 
@@ -146,7 +146,7 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
         if (borrowedAmount[msg.sender] > 0) revert LoanNotRepaid();
 
         uint256 reward = rewards[msg.sender];
-        if (reward < 0) revert AmountNotEnough();
+        if (reward == 0) revert AmountNotEnough();
 
         rewards[msg.sender] = 0;
         emit RewardsClaimed(msg.sender, reward);
@@ -159,12 +159,12 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
      * @param amount Amount of the loan to take.
      */
     function takeLoan(uint256 amount) external nonReentrant whenNotPaused {
-        if (amount <= 0) revert AmountMustBeGreaterThanZero();
+        if (amount == 0) revert AmountMustBeGreaterThanZero();
         if (borrowedAmount[msg.sender] > 0) revert LoanNotRepaid();
         if ((stakedBalance[msg.sender] * 80) / 100 < amount)
             revert InsufficientCollateral(); // Borrow up to 80% of staked amount
 
-        borrowedAmount[msg.sender] += amount;
+        borrowedAmount[msg.sender] = amount;
         loanStartTime[msg.sender] = block.timestamp;
         totalBorrowedAmount += amount;
 
@@ -178,17 +178,15 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
      * @param amount Amount of the loan to repay.
      */
     function repayLoan(uint256 amount) external nonReentrant whenNotPaused {
-        if (amount <= 0) revert AmountMustBeGreaterThanZero();
+        if (amount == 0) revert AmountMustBeGreaterThanZero();
         if (borrowedAmount[msg.sender] < amount) revert AmountNotEnough();
         uint256 interest = calculateInterest(msg.sender);
-        require(
-            s_rewardToken.transferFrom(
-                msg.sender,
-                address(this),
-                amount + interest
-            ),
-            "Transfer failed"
+        bool success = s_rewardToken.transferFrom(
+            msg.sender,
+            address(this),
+            amount + interest
         );
+        if (!success) revert TransferFailed();
         borrowedAmount[msg.sender] -= amount;
         totalBorrowedAmount -= amount;
         if (borrowedAmount[msg.sender] == 0) {
@@ -205,6 +203,9 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
      * @return Interest amount.
      */
     function calculateInterest(address account) public view returns (uint256) {
+        if (borrowedAmount[account] == 0 || loanStartTime[account] == 0) {
+            return 0;
+        }
         uint256 timeElapsed = ((block.timestamp - loanStartTime[account]) /
             20) * 20; // Round down to the nearest 20 seconds
         uint256 annualInterest = (borrowedAmount[account] * interestRate) / 100;
@@ -231,7 +232,7 @@ contract Staking is ReentrancyGuard, Ownable, Pausable {
     function calculateBorrowLimit(
         address account
     ) external view returns (uint256) {
-        if (borrowedAmount[msg.sender] > 0 || stakedBalance[account] <= 0)
+        if (borrowedAmount[account] > 0 || stakedBalance[account] == 0)
             return 0; // if outstanding loan
 
         return (stakedBalance[account] * 80) / 100; // 80% of staked amount

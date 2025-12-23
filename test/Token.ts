@@ -36,10 +36,10 @@ describe("Tokens", function () {
 
     it("Should have the correct name and symbol", async function () {
       const { stakingToken,rewardToken } = await loadFixture(deployStakingTokenFixture);
-      expect(await stakingToken.name()).to.equal("OmniDeFi: Staking Token");
-      expect(await stakingToken.symbol()).to.equal("DTX");
+      expect(await stakingToken.name()).to.equal("AstraDeFi: Staking Token");
+      expect(await stakingToken.symbol()).to.equal("ATX");
 
-      expect(await rewardToken.name()).to.equal("OmniDefi: Staking Rewards");
+      expect(await rewardToken.name()).to.equal("AstraDeFi: Staking Rewards");
       expect(await rewardToken.symbol()).to.equal("dUSD");
     });
   });

@@ -11,7 +11,6 @@ contract Faucet is Ownable {
 
     IERC20 public token;
     uint256 public amountAllowed;
-    // mapping(address => bool) public hasClaimed;
     uint256 public claimInterval;
     mapping(address => uint256) public lastClaimed;
 

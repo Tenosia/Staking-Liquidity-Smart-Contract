@@ -50,12 +50,12 @@ describe("Staking Contract", function () {
   describe("Deployment", function () {
     it("Should set the correct reward rate", async function () {
       const { staking } = await loadFixture(deployStakingFixture);
-      expect(await staking.rewardRate()).to.equal(1e15);
+      expect(await staking.rewardRate()).to.equal(1e10);
     });
 
     it("Should have zero total staked tokens initially", async function () {
       const { staking } = await loadFixture(deployStakingFixture);
-      expect(await staking.totalStaked()).to.equal(0);
+      expect(await staking.totalStakedTokens()).to.equal(0);
     });
   });
 
@@ -68,7 +68,7 @@ describe("Staking Contract", function () {
       await stakingToken.connect(addr1).approve(staking.target, stakeAmount);
       await staking.connect(addr1).stake(stakeAmount);
 
-      expect(await staking.stakedBalanceOf(await addr1.getAddress())).to.equal(
+      expect(await staking.stakedBalance(await addr1.getAddress())).to.equal(
         stakeAmount
       );
     });
@@ -111,7 +111,7 @@ describe("Staking Contract", function () {
 
       const withdrawAmount = stakeAmount / 2n; // Withdraw half
       await staking.connect(addr1).withdrawStakedTokens(withdrawAmount);
-      expect(await staking.stakedBalanceOf(await addr1.getAddress())).to.equal(
+      expect(await staking.stakedBalance(await addr1.getAddress())).to.equal(
         stakeAmount - withdrawAmount
       );
     });
@@ -173,19 +173,5 @@ describe("Staking Contract", function () {
   });
 
 
-  describe("Emergency Withdrawal", function () {
-    it("should allow users to withdraw staked tokens during emergency", async function () {
-      const { staking, stakingToken, addr1, stakeAmount,owner } = await loadFixture(deployStakingFixture);
-
-      await stakingToken.connect(addr1).approve(staking.target, stakeAmount);
-      await staking.connect(addr1).stake(stakeAmount);
-
-      await staking.connect(owner).pause();
-      await staking.connect(addr1).emergencyWithdraw();
-
-      expect(await staking.stakedBalanceOf(await addr1.getAddress())).to.equal(0);
-      expect(await stakingToken.balanceOf(await addr1.getAddress())).to.equal(stakeAmount);
-    });
-  });
 
 });

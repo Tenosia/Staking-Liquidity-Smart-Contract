@@ -18,7 +18,8 @@ describe("Faucet Contract", function () {
     await token.waitForDeployment();
 
     const Faucet = await hre.ethers.getContractFactory("Faucet");
-    const faucet = await Faucet.deploy(token.target, amountAllowed);
+    const claimInterval = 86400n; // 24 hours in seconds
+    const faucet = await Faucet.deploy(token.target, amountAllowed, claimInterval);
 
     await faucet.waitForDeployment();
 
@@ -49,16 +50,16 @@ describe("Faucet Contract", function () {
       expect(await token.balanceOf(await addr1.getAddress())).to.equal(
         amountAllowed
       );
-      expect(await faucet.hasClaimed(await addr1.getAddress())).to.be.true;
+      expect(await faucet.lastClaimed(await addr1.getAddress())).to.be.gt(0);
     });
 
-    it("Should not allow users to claim tokens more than once", async function () {
+    it("Should not allow users to claim tokens too soon", async function () {
       const { faucet, addr1 } = await loadFixture(deployFaucetFixture);
 
       await faucet.connect(addr1).claimTokens();
 
       await expect(faucet.connect(addr1).claimTokens()).to.be.revertedWithCustomError(faucet,
-        "FaucetAlreadyClaimed"
+        "ClaimTooSoon"
       );
     });
 

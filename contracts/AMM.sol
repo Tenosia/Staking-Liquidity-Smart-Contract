@@ -153,7 +153,7 @@ contract AMM is ReentrancyGuard, Ownable {
         checkAmounts(amountIn, minAmountOut)
         returns (uint256 amountOut, uint256 fee)
     {
-        if (minAmountOut > amountIn) revert InvalidAmounts();
+        // Removed redundant check - minAmountOut can be greater than amountIn in some edge cases
         (amountOut, fee, ) = getSwapDetails(tokenIn, amountIn);
         if (amountOut < minAmountOut) revert SlippageExceeded();
         (IERC20 inputToken, IERC20 outputToken) = _getTokenPair(tokenIn);
@@ -192,7 +192,7 @@ contract AMM is ReentrancyGuard, Ownable {
         uint256 inputReserve = inputToken.balanceOf(address(this));
         uint256 outputReserve = outputToken.balanceOf(address(this));
 
-        fee = (amountIn * swapFee) / 1e20; // Calculate fee as a percentage
+        fee = (amountIn * swapFee) / 1e20; // Calculate fee as a percentage (1% = 1e18)
         uint256 inputAmountWithFee = amountIn - fee; // Apply fee
         uint256 numerator = inputAmountWithFee * outputReserve;
         uint256 denominator = inputReserve + inputAmountWithFee;
@@ -262,7 +262,7 @@ contract AMM is ReentrancyGuard, Ownable {
         uint256 token1Reserve = token1.balanceOf(address(this));
         uint256 token2Reserve = token2.balanceOf(address(this));
 
-        if (token1Reserve <= 0 || token2Reserve <= 0) revert InvalidReserves();
+        if (token1Reserve == 0 || token2Reserve == 0) revert InvalidReserves();
 
         if (tokenIn == address(token1)) {
             amountRequired = (amount * token2Reserve) / token1Reserve;
@@ -285,7 +285,7 @@ contract AMM is ReentrancyGuard, Ownable {
         uint256 token1Reserve = token1.balanceOf(address(this));
         uint256 token2Reserve = token2.balanceOf(address(this));
 
-        if (token1Reserve <= 0 || token2Reserve <= 0) revert InvalidReserves();
+        if (token1Reserve == 0 || token2Reserve == 0) revert InvalidReserves();
 
         priceToken1InToken2 = (token2Reserve * 1e18) / token1Reserve;
         priceToken2InToken1 = (token1Reserve * 1e18) / token2Reserve;
